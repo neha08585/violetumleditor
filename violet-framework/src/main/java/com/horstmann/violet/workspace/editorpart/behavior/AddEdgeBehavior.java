@@ -7,7 +7,10 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.SwingUtilities;
 
@@ -45,7 +48,7 @@ public class AddEdgeBehavior extends AbstractEditorPartBehavior implements IGrap
         this.dragging = false;
         graphToolsBar.addMouseListener(this);
     }
-
+  private Map<Id,Map<String,Id>> graphNodes = new HashMap<Id,Map<String,Id>>();
     @Override
     public void onMousePressed(MouseEvent event)
     {
@@ -100,7 +103,7 @@ public class AddEdgeBehavior extends AbstractEditorPartBehavior implements IGrap
         {
             return;
         }
-        if (this.isLinkingInProgress)
+        if (this.isLinkingInProgress)	
         {
             endAction(event);
             return;
@@ -235,8 +238,30 @@ public class AddEdgeBehavior extends AbstractEditorPartBehavior implements IGrap
                     double relativeEndY = endPoint.getY() - endNodeLocationOnGraph.getY();
                     relativeEndPoint = new Point2D.Double(relativeEndX, relativeEndY);
                 }
+              for (Entry<Id, Map<String,Id>> entry : graphNodes.entrySet()) {
+            	    Id key = entry.getKey();
+            	    Map<String,Id> nodeIds = entry.getValue();
+            	    if (graph.findEdge(key)!=null) {
+            	    	if(nodeIds.get("startNode").equals(endNode.getId()) && nodeIds.get("endNode").equals(startNode.getId())) {
+            	    		this.dialogFactory.showWarningDialog(noBidirectional);
+                         	return false;
+                    	 }
+            	    		
+            	    // do what you have to do here
+            	    // In your case, another loop.
+            	}
+                	
+                }
+                
                 if (graph.connect(newEdge, startNode, relativeStartPoint, endNode, relativeEndPoint, transitionPointsAsArray))
                 {
+                	Id id=newEdge.getId();
+                	Id startId = startNode.getId();
+                	Id endId = endNode.getId();
+                	Map<String,Id>nodeInfo= new HashMap<String,Id>();
+                	nodeInfo.put("startNode", startId);
+                	nodeInfo.put("endNode", endId);
+                	graphNodes.put(id, nodeInfo);
                     newEdge.incrementRevision();
                     isAdded = true;
                 }
@@ -331,6 +356,9 @@ public class AddEdgeBehavior extends AbstractEditorPartBehavior implements IGrap
     
     @ResourceBundleBean(key = "addedge.properties.no_drag_message")
     private String noDragMessage;
+    
+    @ResourceBundleBean(key = "addedge.properties.no_bidirectional_message")
+    private String noBidirectional;
 
 
 }
